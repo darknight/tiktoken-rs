@@ -1,5 +1,6 @@
-// This check is new and seems buggy (possibly with PyO3 interaction)
-#![allow(clippy::borrow_deref_ref)]
+//! # tiktoken_rust
+//!
+//! This crate is a tokeniser for use with OpenAI's models.
 
 mod core;
 pub use crate::core::{encoding_for_model, get_encoding, Encoding};

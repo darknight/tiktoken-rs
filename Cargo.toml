@@ -3,6 +3,8 @@ name = "tiktoken-rust"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.67.1"
+license = "MIT"
+description = "a fast BPE tokeniser for use with OpenAI's models"
 
 [lib]
 crate-type = ["lib"]
