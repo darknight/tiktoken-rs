@@ -7,7 +7,7 @@ use sha2::{Sha256, Digest};
 use uuid::Uuid;
 use base64ct::{Base64, Encoding};
 use bstr::ByteSlice;
-use serde_json::{Result as JResult, Value, Map};
+use serde_json::{Result as JResult, Value, Map, to_vec};
 use crate::core::Result;
 
 const TIKTOKEN_CACHE_DIR: &str = "TIKTOKEN_CACHE_DIR";
@@ -25,35 +25,28 @@ fn read_file_remote(blob_path: &str) -> Result<String> {
 }
 
 fn read_file_cached(blob_path: &str) -> Result<String> {
-    let cache_dir = env::var(TIKTOKEN_CACHE_DIR)
-        .or(env::var(DATA_GYM_CACHE_DIR))
-        .unwrap_or(
-            env::temp_dir()
-                .join(DATA_GYM_TMP_DIR)
-                .to_string_lossy()
-                .to_string()
-        );
-
+    let cache_dir = get_cache_dir();
     if cache_dir.is_empty() {
         // disable caching
         return read_file_remote(blob_path)
     }
 
-    let cache_key = Sha256::digest(blob_path);
-    let cache_path = Path::new(&cache_dir)
-        .join(String::from_utf8(cache_key.to_vec()).unwrap());
+    let cache_filename = generate_cache_filename(blob_path);
+    let cache_path = Path::new(&cache_dir).join(&cache_filename);
     if cache_path.exists() {
+        // found caching file
         let res = fs::read_to_string(&cache_path)?;
         return Ok(res)
     }
 
     let contents = read_file_remote(blob_path)?;
-    fs::create_dir_all(&cache_dir)?;
-    // cache_key is valid sha256 digest, so always valid to be a string.
-    let mut tmp_file = String::from_utf8(cache_key.to_vec()).unwrap();
-    let tmp_file = tmp_file + "." + Uuid::new_v4().to_string().as_str() + ".tmp";
+
+    // save contents to local cache path
+    // first create tmp file and write, then rename tmp file to destination
+    let tmp_file = cache_filename + "." + Uuid::new_v4().to_string().as_str() + ".tmp";
     let tmp_cache_path = Path::new(&cache_dir).join(tmp_file);
 
+    fs::create_dir_all(&cache_dir)?;
     fs::write(&tmp_cache_path, &contents)?;
     fs::rename(&tmp_cache_path, &cache_path)?;
 
@@ -154,4 +147,58 @@ pub fn data_gym_to_mergeable_bpe_ranks(
 
 fn decode_data_gym(value: &str, dict: &HashMap<char, u8>) -> Vec<u8> {
     value.chars().map(|c| dict.get(&c).copied().unwrap()).collect()
+}
+
+fn get_cache_dir() -> String {
+    env::var(TIKTOKEN_CACHE_DIR)
+        .or(env::var(DATA_GYM_CACHE_DIR))
+        .unwrap_or(
+            env::temp_dir()
+                .join(DATA_GYM_TMP_DIR)
+                .to_string_lossy()
+                .to_string()
+        )
+}
+
+fn generate_cache_filename(blob_path: &str) -> String {
+    let cache_key = Sha256::digest(blob_path);
+    let hash_items: Vec<String> = cache_key
+        .iter()
+        .map(|k| format!("{:02X?}", k))
+        .collect();
+
+    hash_items.join("")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::ptr::hash;
+    use sha2::digest::generic_array::functional::FunctionalSequence;
+    use super::*;
+
+    #[test]
+    fn test_get_cache_dir() {
+        env::set_var(TIKTOKEN_CACHE_DIR, "/tiktoken/cache/dir/");
+        let res = get_cache_dir();
+        assert_eq!(res, "/tiktoken/cache/dir/");
+
+        env::remove_var(TIKTOKEN_CACHE_DIR);
+        env::set_var(DATA_GYM_CACHE_DIR, "/data/gym/cache/dir/");
+        let res = get_cache_dir();
+        assert_eq!(res, "/data/gym/cache/dir/");
+
+        env::remove_var(DATA_GYM_CACHE_DIR);
+        let res = get_cache_dir();
+        assert!(res.ends_with(DATA_GYM_TMP_DIR));
+    }
+
+    #[test]
+    fn test_generate_cache_path() {
+        let expected = "26B9C229141B3D34DCAC6D3728F94F1E40ABB67EF4A84CA1351ABC0A20E6B701";
+        let res = generate_cache_filename(
+            "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken"
+        );
+        assert_eq!(&res, expected);
+    }
 }

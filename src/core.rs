@@ -1,6 +1,6 @@
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Error, format, Formatter, Pointer};
+use std::fmt::{Debug, Display, Error, format, Formatter, Pointer};
 use std::hash::Hash;
 use std::io::Read;
 use std::string::FromUtf8Error;
@@ -76,6 +76,12 @@ pub struct Encoding {
 
     max_token_value: usize,
     core_bpe: CoreBPE,
+}
+
+impl Debug for Encoding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<Encoding '{}'>", self.name)
+    }
 }
 
 /// Display
@@ -267,8 +273,8 @@ impl Encoding {
 impl Encoding {
 
     /// Decodes a list of tokens into bytes.
-    pub fn decode_bytes(&self, tokens: Vec<usize>) -> Vec<u8> {
-        self.core_bpe._decode_native(&tokens)
+    pub fn decode_bytes(&self, tokens: &Vec<usize>) -> Vec<u8> {
+        self.core_bpe._decode_native(tokens)
     }
 
     /// Decodes a list of tokens into a string.
@@ -278,7 +284,7 @@ impl Encoding {
     /// `Strict` mode does validity check and returns Err if provided bytes are not UTF-8
     /// `Replace` mode replaces invalid UTF-8 sequences with U+FFFD
     ///
-    pub fn decode(&self, tokens: Vec<usize>, mode: DecodeMode) -> Result<String> {
+    pub fn decode(&self, tokens: &Vec<usize>, mode: DecodeMode) -> Result<String> {
         let bytes = self.decode_bytes(tokens);
         match mode {
             DecodeMode::Strict => String::from_utf8(bytes)
@@ -301,7 +307,7 @@ impl Encoding {
 
     /// Decodes a list of tokens into a list of bytes.
     /// Useful for visualising tokenisation.
-    pub fn decode_tokens_bytes(&self, tokens: Vec<usize>) -> Result<Vec<Vec<u8>>> {
+    pub fn decode_tokens_bytes(&self, tokens: &Vec<usize>) -> Result<Vec<Vec<u8>>> {
         let data: Vec<Result<Vec<u8>>> = tokens.par_iter()
             .map(|&token| self.decode_single_token_bytes(token))
             .collect();

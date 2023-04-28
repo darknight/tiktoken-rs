@@ -24,13 +24,11 @@ static ENCODING_TO_CONSTRUCTOR: Lazy<HashMap<&'static str, Box<dyn Fn() -> Encod
 
 pub fn find_encoding_constructor(encoding_name: &str) -> Option<&Box<dyn Fn() -> EncodingParam + Send + Sync>> {
     ENCODING_TO_CONSTRUCTOR.get(encoding_name)
-    // todo!()
 }
 
 /// List available encodings by name
 pub fn list_encoding_names<'a>() -> Vec<&'a str> {
     ENCODING_TO_CONSTRUCTOR.keys().copied().collect()
-    // todo!()
 }
 
 fn gpt2() -> EncodingParam {
@@ -124,4 +122,18 @@ fn cl100k_base() -> EncodingParam {
         special_tokens.into_iter().collect(),
         None
     )
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_list_encoding_names() {
+        let mut res = list_encoding_names();
+        res.sort();
+
+        assert_eq!(res, vec!["cl100k_base", "gpt2", "p50k_base", "p50k_edit", "r50k_base"]);
+    }
 }

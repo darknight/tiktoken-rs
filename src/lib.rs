@@ -103,14 +103,14 @@ fn _byte_pair_merge<T>(
     out
 }
 
-pub fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<usize> {
+fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<usize> {
     if piece.len() == 1 {
         return vec![ranks[piece]];
     }
     _byte_pair_merge(piece, ranks, |p| ranks[&piece[p.start..p.end]])
 }
 
-pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<&'a [u8]> {
+fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<&'a [u8]> {
     if piece.len() == 1 {
         return vec![piece];
     }
@@ -159,7 +159,7 @@ pub fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> 
 // to be hashing of two-tuples of ints, which looks like it may also be a couple percent faster.
 
 use std::num::NonZeroU64;
-pub struct FakeThreadId(NonZeroU64);
+struct FakeThreadId(NonZeroU64);
 
 fn hash_current_thread() -> usize {
     // It's easier to use unsafe than to use nightly. Rust has this nice u64 thread id counter
