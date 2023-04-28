@@ -1,7 +1,6 @@
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::io;
 use std::string::FromUtf8Error;
 use thiserror::Error;

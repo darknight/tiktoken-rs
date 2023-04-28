@@ -6,10 +6,8 @@ use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{format, Debug, Display, Error, Formatter, Pointer};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::io::Read;
-use std::string::FromUtf8Error;
 
 pub type Result<T> = std::result::Result<T, EncodeError>;
 
@@ -27,8 +25,8 @@ pub fn encoding_for_model(model_name: &str) -> Result<Encoding> {
     let encoding_opt = MODEL_TO_ENCODING
         .get(model_name)
         .map(|&encoding| get_encoding(encoding));
-    if encoding_opt.is_some() {
-        return encoding_opt.unwrap();
+    if let Some(encoding) = encoding_opt {
+        return encoding;
     }
 
     // Check if the model matches a known prefix
@@ -265,7 +263,7 @@ impl Encoding {
         let (tokens, completions) = self
             .core_bpe
             ._encode_unstable_native(text, &allowed_special_set);
-        let completions = completions.into_iter().map(|seq| seq).collect();
+        let completions = completions.into_iter().collect();
         Ok((tokens, completions))
     }
 
@@ -288,7 +286,7 @@ impl Encoding {
 /// Public interfaces for decoding
 impl Encoding {
     /// Decodes a list of tokens into bytes.
-    pub fn decode_bytes(&self, tokens: &Vec<usize>) -> Vec<u8> {
+    pub fn decode_bytes(&self, tokens: &[usize]) -> Vec<u8> {
         self.core_bpe._decode_native(tokens)
     }
 

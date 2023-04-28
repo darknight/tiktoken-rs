@@ -2,12 +2,11 @@ use crate::core::Result;
 use base64ct::{Base64, Encoding};
 use bstr::ByteSlice;
 use rayon::prelude::*;
-use serde_json::{to_vec, Map, Result as JResult, Value};
+use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::ops::Add;
-use std::path::{Path, PathBuf};
-use std::{env, fs, io};
+use std::path::Path;
+use std::{env, fs};
 use uuid::Uuid;
 
 const TIKTOKEN_CACHE_DIR: &str = "TIKTOKEN_CACHE_DIR";
@@ -122,9 +121,9 @@ pub fn data_gym_to_mergeable_bpe_ranks(
         n += 1
     }
 
-    /// check that the encoder file matches the merges file
-    /// this sanity check is important since tiktoken assumes that ranks are ordered the same
-    /// as merge priority
+    // check that the encoder file matches the merges file
+    // this sanity check is important since tiktoken assumes that ranks are ordered the same
+    // as merge priority
     let content = read_file_cached(encoder_json_file).unwrap_or("{}".to_string());
     let encoder_json: Value =
         serde_json::from_str(&content).unwrap_or(Value::Object(Map::default()));
@@ -175,9 +174,7 @@ fn generate_cache_filename(blob_path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha2::digest::generic_array::functional::FunctionalSequence;
     use std::env;
-    use std::ptr::hash;
 
     #[test]
     fn test_get_cache_dir() {

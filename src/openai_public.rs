@@ -2,8 +2,6 @@ use crate::core::EncodingParam;
 use crate::load::{data_gym_to_mergeable_bpe_ranks, load_tiktoken_bpe};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::hash::Hash;
-use std::sync::{Arc, Mutex};
 
 const ENDOFTEXT: &str = "<|endoftext|>";
 const FIM_PREFIX: &str = "<|fim_prefix|>";

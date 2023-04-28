@@ -110,6 +110,7 @@ fn byte_pair_encode(piece: &[u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<usize>
     _byte_pair_merge(piece, ranks, |p| ranks[&piece[p.start..p.end]])
 }
 
+#[allow(dead_code)]
 fn byte_pair_split<'a>(piece: &'a [u8], ranks: &HashMap<Vec<u8>, usize>) -> Vec<&'a [u8]> {
     if piece.len() == 1 {
         return vec![piece];
