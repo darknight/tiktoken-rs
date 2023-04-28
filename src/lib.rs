@@ -2,10 +2,10 @@
 #![allow(clippy::borrow_deref_ref)]
 
 mod core;
-pub use crate::core::{Encoding, encoding_for_model, get_encoding};
+pub use crate::core::{encoding_for_model, get_encoding, Encoding};
 
 mod model;
-pub use model::{AllowedSpecial, DisallowedSpecial, DecodeMode, EncodeError};
+pub use model::{AllowedSpecial, DecodeMode, DisallowedSpecial, EncodeError};
 
 mod load;
 mod openai_public;
@@ -483,7 +483,6 @@ impl CoreBPE {
         })
     }
 }
-
 
 #[cfg(test)]
 mod tests {

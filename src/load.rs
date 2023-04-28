@@ -1,14 +1,14 @@
-use std::{env, fs, io};
+use crate::core::Result;
+use base64ct::{Base64, Encoding};
+use bstr::ByteSlice;
+use rayon::prelude::*;
+use serde_json::{to_vec, Map, Result as JResult, Value};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
-use rayon::prelude::*;
-use sha2::{Sha256, Digest};
+use std::{env, fs, io};
 use uuid::Uuid;
-use base64ct::{Base64, Encoding};
-use bstr::ByteSlice;
-use serde_json::{Result as JResult, Value, Map, to_vec};
-use crate::core::Result;
 
 const TIKTOKEN_CACHE_DIR: &str = "TIKTOKEN_CACHE_DIR";
 const DATA_GYM_CACHE_DIR: &str = "DATA_GYM_CACHE_DIR";
@@ -28,7 +28,7 @@ fn read_file_cached(blob_path: &str) -> Result<String> {
     let cache_dir = get_cache_dir();
     if cache_dir.is_empty() {
         // disable caching
-        return read_file_remote(blob_path)
+        return read_file_remote(blob_path);
     }
 
     let cache_filename = generate_cache_filename(blob_path);
@@ -36,7 +36,7 @@ fn read_file_cached(blob_path: &str) -> Result<String> {
     if cache_path.exists() {
         // found caching file
         let res = fs::read_to_string(&cache_path)?;
-        return Ok(res)
+        return Ok(res);
     }
 
     let contents = read_file_remote(blob_path)?;
@@ -57,7 +57,8 @@ fn read_file_cached(blob_path: &str) -> Result<String> {
 /// or `value` part is not a number.
 pub fn load_tiktoken_bpe(tiktoken_bpe_file: &str) -> HashMap<Vec<u8>, usize> {
     let contents = read_file_cached(tiktoken_bpe_file).unwrap_or_default();
-    contents.lines()
+    contents
+        .lines()
         .map(|line| line.split_once(" "))
         .filter(|item| item.is_some())
         .map(|item| {
@@ -75,7 +76,7 @@ pub fn load_tiktoken_bpe(tiktoken_bpe_file: &str) -> HashMap<Vec<u8>, usize> {
 /// [0x21-0x7E], [0xA1-0xAD), (0xAD-0xFF]
 pub fn data_gym_to_mergeable_bpe_ranks(
     vocab_bpe_file: &str,
-    encoder_json_file: &str
+    encoder_json_file: &str,
 ) -> HashMap<Vec<u8>, usize> {
     let mut rank_to_intbyte: Vec<u8> = vec![];
     rank_to_intbyte.extend(0x21..=0x7E);
@@ -90,7 +91,7 @@ pub fn data_gym_to_mergeable_bpe_ranks(
     for b in 0..=255 {
         if !rank_to_intbyte.contains(&b) {
             rank_to_intbyte.push(b);
-            data_gym_byte_to_byte.insert(char::from_u32(256+n).unwrap(), b);
+            data_gym_byte_to_byte.insert(char::from_u32(256 + n).unwrap(), b);
             n += 1;
         }
     }
@@ -124,21 +125,22 @@ pub fn data_gym_to_mergeable_bpe_ranks(
     /// check that the encoder file matches the merges file
     /// this sanity check is important since tiktoken assumes that ranks are ordered the same
     /// as merge priority
-    let content = read_file_cached(encoder_json_file)
-        .unwrap_or("{}".to_string());
-    let encoder_json: Value = serde_json::from_str(&content)
-        .unwrap_or(Value::Object(Map::default()));
+    let content = read_file_cached(encoder_json_file).unwrap_or("{}".to_string());
+    let encoder_json: Value =
+        serde_json::from_str(&content).unwrap_or(Value::Object(Map::default()));
     let mut encoder_json_loaded: HashMap<Vec<u8>, usize> = encoder_json
         .as_object()
         .unwrap()
         .iter()
         .map(|(key, val)| {
-            (decode_data_gym(key, &data_gym_byte_to_byte), val.as_u64().unwrap() as usize)
+            (
+                decode_data_gym(key, &data_gym_byte_to_byte),
+                val.as_u64().unwrap() as usize,
+            )
         })
         .collect();
     encoder_json_loaded.remove(b"<|endoftext|>".as_bytes());
     encoder_json_loaded.remove(b"<|endoftext|>".as_bytes());
-
 
     // TODO: assert bpe_ranks == encoder_json_loaded
 
@@ -146,7 +148,10 @@ pub fn data_gym_to_mergeable_bpe_ranks(
 }
 
 fn decode_data_gym(value: &str, dict: &HashMap<char, u8>) -> Vec<u8> {
-    value.chars().map(|c| dict.get(&c).copied().unwrap()).collect()
+    value
+        .chars()
+        .map(|c| dict.get(&c).copied().unwrap())
+        .collect()
 }
 
 fn get_cache_dir() -> String {
@@ -156,26 +161,23 @@ fn get_cache_dir() -> String {
             env::temp_dir()
                 .join(DATA_GYM_TMP_DIR)
                 .to_string_lossy()
-                .to_string()
+                .to_string(),
         )
 }
 
 fn generate_cache_filename(blob_path: &str) -> String {
     let cache_key = Sha256::digest(blob_path);
-    let hash_items: Vec<String> = cache_key
-        .iter()
-        .map(|k| format!("{:02X?}", k))
-        .collect();
+    let hash_items: Vec<String> = cache_key.iter().map(|k| format!("{:02X?}", k)).collect();
 
     hash_items.join("")
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use sha2::digest::generic_array::functional::FunctionalSequence;
     use std::env;
     use std::ptr::hash;
-    use sha2::digest::generic_array::functional::FunctionalSequence;
-    use super::*;
 
     #[test]
     fn test_get_cache_dir() {
@@ -197,7 +199,7 @@ mod tests {
     fn test_generate_cache_path() {
         let expected = "26B9C229141B3D34DCAC6D3728F94F1E40ABB67EF4A84CA1351ABC0A20E6B701";
         let res = generate_cache_filename(
-            "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken"
+            "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
         );
         assert_eq!(&res, expected);
     }

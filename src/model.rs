@@ -1,9 +1,9 @@
+use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::io;
 use std::string::FromUtf8Error;
-use once_cell::sync::Lazy;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -31,16 +31,20 @@ pub enum EncodeError {
     TokenNotFoundError(usize),
     #[error("could not encode `{0:?}` to token")]
     TokenEncodeError(Vec<u8>),
-    #[error("Encountered text corresponding to disallowed special token '{0}'.\n
+    #[error(
+        "Encountered text corresponding to disallowed special token '{0}'.\n
 If you want this text to be encoded as a special token, pass it to `allowed_special`.\n
 If you want this text to be encoded as normal text, disable the check for this token \
 by passing `disallowed_special=(enc.special_tokens_set - {{'{0}'}})`.\n
-To disable this check for all special tokens, pass `disallowed_special=()`.\n")]
+To disable this check for all special tokens, pass `disallowed_special=()`.\n"
+    )]
     SpecialTokenError(String),
     #[error("convert bytes to string error: {0}")]
     ConvertStringError(#[from] FromUtf8Error),
-    #[error("Could not automatically map {0} to a tokeniser.
-Please use `tiktoken.get_encoding` to explicitly get the tokeniser you expect.")]
+    #[error(
+        "Could not automatically map {0} to a tokeniser.
+Please use `tiktoken.get_encoding` to explicitly get the tokeniser you expect."
+    )]
     ModelNameError(String),
     #[error("Unknown encoding {0}")]
     EncodingNameError(String),
@@ -50,7 +54,6 @@ Please use `tiktoken.get_encoding` to explicitly get the tokeniser you expect.")
     HTTPError(#[from] reqwest::Error),
 }
 
-
 // TODO: these will likely be replaced by an API endpoint
 pub static MODEL_PREFIX_TO_ENCODING: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
@@ -59,7 +62,6 @@ pub static MODEL_PREFIX_TO_ENCODING: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("gpt-3.5-turbo-", "cl100k_base"), // e.g, gpt-3.5-turbo-0301, -0401, etc.
     ])
 });
-
 
 pub static MODEL_TO_ENCODING: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
