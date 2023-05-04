@@ -69,7 +69,7 @@ impl EncodingParam {
 
 pub struct Encoding {
     name: String,
-    pat_str: String,
+    _pat_str: String,
     special_tokens: HashMap<String, usize>,
 
     max_token_value: usize,
@@ -138,7 +138,7 @@ impl Encoding {
 
         Ok(Encoding {
             name: param.name,
-            pat_str: param.pat_str,
+            _pat_str: param.pat_str,
             special_tokens: param.special_tokens,
             max_token_value,
             core_bpe,
@@ -297,12 +297,10 @@ impl Encoding {
     /// `Strict` mode does validity check and returns Err if provided bytes are not UTF-8
     /// `Replace` mode replaces invalid UTF-8 sequences with U+FFFD
     ///
-    pub fn decode(&self, tokens: &Vec<usize>, mode: DecodeMode) -> Result<String> {
+    pub fn decode(&self, tokens: &[usize], mode: DecodeMode) -> Result<String> {
         let bytes = self.decode_bytes(tokens);
         match mode {
-            DecodeMode::Strict => {
-                String::from_utf8(bytes).map_err(|e| EncodeError::ConvertStringError(e))
-            }
+            DecodeMode::Strict => String::from_utf8(bytes).map_err(EncodeError::ConvertStringError),
             DecodeMode::Replace => Ok(String::from_utf8_lossy(&bytes).to_string()),
         }
     }
@@ -337,6 +335,11 @@ impl Encoding {
 
 /// Miscellaneous interfaces
 impl Encoding {
+    /// Returns the name of this encoding
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
     /// Returns the list of all token byte values.
     pub fn token_byte_values(&self) -> Vec<Vec<u8>> {
         self.core_bpe

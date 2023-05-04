@@ -1,6 +1,6 @@
 [package]
 name = "tiktoken-rust"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.67.1"
 license = "MIT"
@@ -10,9 +10,6 @@ description = "a fast BPE tokeniser for use with OpenAI's models"
 crate-type = ["lib"]
 
 [dependencies]
-#pyo3 = { version = "0.17.3", features = ["extension-module"] }
-
-# tiktoken dependencies
 fancy-regex = "0.11.0"
 regex = "1.7.0"
 rustc-hash = "1.1.0"

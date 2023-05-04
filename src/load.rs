@@ -1,7 +1,6 @@
 use crate::core::Result;
 use base64ct::{Base64, Encoding};
 use bstr::ByteSlice;
-use rayon::prelude::*;
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -58,11 +57,11 @@ pub fn load_tiktoken_bpe(tiktoken_bpe_file: &str) -> HashMap<Vec<u8>, usize> {
     let contents = read_file_cached(tiktoken_bpe_file).unwrap_or_default();
     contents
         .lines()
-        .map(|line| line.split_once(" "))
+        .map(|line| line.split_once(' '))
         .filter(|item| item.is_some())
         .map(|item| {
             let (b64, num) = item.unwrap();
-            let key = Vec::from(Base64::decode_vec(b64).unwrap());
+            let key = Base64::decode_vec(b64).unwrap();
             let val: usize = num.parse().unwrap();
             (key, val)
         })
@@ -108,9 +107,9 @@ pub fn data_gym_to_mergeable_bpe_ranks(
     let bpe_merges: Vec<(&str, &str)> = vocab_bpe_contents
         .lines()
         .skip(1)
-        .map(|line| line.split_once(" "))
+        .map(|line| line.split_once(' '))
         .filter(|item| item.is_some())
-        .map(|item| item.unwrap())
+        .flatten()
         .collect();
 
     let mut n = bpe_ranks.len();

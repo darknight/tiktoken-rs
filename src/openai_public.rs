@@ -9,6 +9,7 @@ const FIM_MIDDLE: &str = "<|fim_middle|>";
 const FIM_SUFFIX: &str = "<|fim_suffix|>";
 const ENDOFPROMPT: &str = "<|endofprompt|>";
 
+#[allow(clippy::type_complexity)]
 static ENCODING_TO_CONSTRUCTOR: Lazy<
     HashMap<&'static str, Box<dyn Fn() -> EncodingParam + Send + Sync>>,
 > = Lazy::new(|| {
@@ -36,6 +37,7 @@ static ENCODING_TO_CONSTRUCTOR: Lazy<
     m
 });
 
+#[allow(clippy::borrowed_box)]
 pub fn find_encoding_constructor(
     encoding_name: &str,
 ) -> Option<&Box<dyn Fn() -> EncodingParam + Send + Sync>> {

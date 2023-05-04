@@ -3,7 +3,7 @@
 //! This crate is a tokeniser for use with OpenAI's models.
 
 mod core;
-pub use crate::core::{encoding_for_model, get_encoding, Encoding};
+pub use crate::core::{encoding_for_model, get_encoding, Encoding, Result};
 
 mod model;
 pub use model::{AllowedSpecial, DecodeMode, DisallowedSpecial, EncodeError};
@@ -445,7 +445,7 @@ impl CoreBPE {
         encoder: HashMap<Vec<u8>, usize>,
         special_tokens_encoder: HashMap<String, usize>,
         pattern: &str,
-    ) -> Result<Self, fancy_regex::Error> {
+    ) -> Result<Self> {
         let regex = Regex::new(pattern)?;
 
         let special_regex = {
