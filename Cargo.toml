@@ -5,6 +5,7 @@ edition = "2021"
 rust-version = "1.67.1"
 license = "MIT"
 description = "a fast BPE tokeniser for use with OpenAI's models"
+repository = "https://github.com/darknight/tiktoken-rust"
 
 [lib]
 crate-type = ["lib"]
