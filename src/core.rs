@@ -78,14 +78,14 @@ pub struct Encoding {
 
 impl Debug for Encoding {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<Encoding '{}'>", self.name)
+        write!(f, "<Encoding '{:?}'>", self.name)
     }
 }
 
 /// Display
 impl Display for Encoding {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<Encoding '{}'>", self.name)
+        write!(f, "<Encoding '{:?}'>", self.name)
     }
 }
 
@@ -290,6 +290,14 @@ impl Encoding {
         self.core_bpe._decode_native(tokens)
     }
 
+    /// Decodes a batch (list of lists of tokens) into a list of bytes.
+    pub fn decode_bytes_batch(self, batch: &[&[usize]]) -> Vec<Vec<u8>> {
+        batch
+            .par_iter()
+            .map(|tokens| self.decode_bytes(tokens))
+            .collect()
+    }
+
     /// Decodes a list of tokens into a string.
     ///
     /// WARNING: decoded bytes are not guaranteed to be valid UTF-8.
@@ -303,6 +311,14 @@ impl Encoding {
             DecodeMode::Strict => String::from_utf8(bytes).map_err(EncodeError::ConvertStringError),
             DecodeMode::Replace => Ok(String::from_utf8_lossy(&bytes).to_string()),
         }
+    }
+
+    /// Decodes a batch (list of lists of tokens) into a list of strings.
+    pub fn decode_batch(&self, batch: &[&[usize]], mode: DecodeMode) -> Vec<Result<String>> {
+        batch
+            .par_iter()
+            .map(|tokens| self.decode(tokens, mode.clone()))
+            .collect()
     }
 
     /// Decodes a token into bytes.
@@ -330,6 +346,37 @@ impl Encoding {
             res.push(item?);
         }
         Ok(res)
+    }
+
+    /// Decodes a list of tokens into a string and a list of offsets.
+    /// Each offset is the index into text corresponding to the start of each token.
+    /// If UTF-8 character boundaries do not line up with token boundaries, the offset is the index
+    /// of the first character that contains bytes from the token.
+    /// This will currently raise if given tokens that decode to invalid UTF-8; this behaviour may
+    /// change in the future to be more permissive.
+    /// >>> enc.decode_with_offsets([31373, 995])
+    /// ('hello world', [0, 5])
+    pub fn decode_with_offsets(self, tokens: &Vec<usize>) -> Result<(String, Vec<usize>)> {
+        let token_bytes = self.decode_tokens_bytes(tokens)?;
+        let mut text_len = 0;
+        let mut offsets = vec![];
+
+        for token in token_bytes {
+            let offset = if token[0] >= 0x80 && token[0] < 0xC0 {
+                max(0, text_len - 1)
+            } else {
+                max(0, text_len)
+            };
+            offsets.push(offset);
+            text_len += token
+                .iter()
+                .map(|&c| if c < 0x80 || c >= 0xC0 { 1 } else { 0 })
+                .sum::<usize>();
+        }
+
+        let text = self.decode(tokens, DecodeMode::Strict)?;
+
+        Ok((text, offsets))
     }
 }
 
